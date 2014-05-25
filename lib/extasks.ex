@@ -2,15 +2,23 @@ defmodule ExTask do
   use Application
 
   def start(_type, _args) do
-    Extasks.Supervisor.start_link
+  	:ok = :pg2.create(:tasks)
+    {:ok, pid} = Extasks.Supervisor.start_link
+  	for n <- 1..(:application.get_all_env(:extask)[:workers]) do
+  		result = :supervisor.start_child Extasks.Supervisor, Supervisor.Behaviour.worker(ExTask.Server, [], [id: binary_to_atom("extask#{n}")])
+  	end
+  	{:ok, pid}
   end
 
-  def run(task), do: ExTask.Server.run(task)
-  def await(task, timeout \\ 5000), do: ExTask.Server.await(task, timeout)
+  def run(task) do
+  	worker = :pg2.get_members(:tasks) |> Enum.shuffle |> hd
+  	{worker, ExTask.Server.run(worker, task)}
+  end
+  def await({worker,task}, timeout \\ 5000), do: ExTask.Server.await({worker, task}, timeout)
 end
 
 defmodule ExTask.Server do
-	use ExActor.GenServer, export: :tasks
+	use ExActor.GenServer
 	require Lager
 	@debug false
 
@@ -27,15 +35,15 @@ defmodule ExTask.Server do
 	# TODO: add await function...
 	#
 
-	def await(task, timeout \\ 5000) do
+	def await({worker, task}, timeout \\ 5000) do
 		#
 		#	should wait until results appears
 		#
-		subsribe_to_results(task, self)
+		subsribe_to_results(worker, task, self)
 
 		receive do
 			{:results, ^task, data} -> 
-				remove_reply(task)
+				remove_reply(worker, task)
 				data
 			after timeout -> :timeout
 		end
@@ -46,6 +54,7 @@ defmodule ExTask.Server do
 	#
 	definit do
 		debug_info "Starting tasks manager."
+		:pg2.join(:tasks, self)
 		initial_state(%{})
 	end 
 	defcall run(task), state: state do
