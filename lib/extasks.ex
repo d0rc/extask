@@ -5,7 +5,7 @@ defmodule ExTask do
   	:ok = :pg2.create(:tasks)
     {:ok, pid} = Extasks.Supervisor.start_link
   	for n <- 1..(:application.get_all_env(:extask)[:workers]) do
-  		result = :supervisor.start_child Extasks.Supervisor, Supervisor.Behaviour.worker(ExTask.Server, [], [id: binary_to_atom("extask#{n}")])
+  		result = :supervisor.start_child Extasks.Supervisor, Supervisor.Spec.worker(ExTask.Server, [], [id: binary_to_atom("extask#{n}")])
   	end
   	{:ok, pid}
   end
