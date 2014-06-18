@@ -5,7 +5,7 @@ defmodule ExTask do
   	:ok = :pg2.create(:tasks)
     {:ok, pid} = Extasks.Supervisor.start_link
   	for n <- 1..(:application.get_all_env(:extask)[:workers]) do
-  		result = :supervisor.start_child Extasks.Supervisor, Supervisor.Spec.worker(ExTask.Server, [], [id: binary_to_atom("extask#{n}")])
+  		:supervisor.start_child Extasks.Supervisor, Supervisor.Spec.worker(ExTask.Server, [], [id: :erlang.binary_to_atom("extask#{n}", :utf8)])
   	end
   	{:ok, pid}
   end
@@ -93,8 +93,8 @@ defmodule ExTask.Server do
 			nil ->
 				debug_info "Phantom child #{inspect pid} exited."
 				noreply
-			response -> 
-				debug_info "Child #{inspect pid} exited..., saved response is: #{inspect response}"
+			_response -> 
+				debug_info "Child #{inspect pid} exited..., saved response is: #{inspect _response}"
 				noreply
 		end
 	end
