@@ -19,14 +19,14 @@ end
 
 defmodule ExTask.Server do
 	use ExActor.GenServer
-	require Lager
+	require Logger
 	@debug false
 
 	defmacro debug_info(str) do
 		case @debug do
 			true ->
 				quote do
-					Lager.info(unquote(str))
+					Logger.info(unquote(str))
 				end
 			false -> nil
 		end

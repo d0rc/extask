@@ -8,13 +8,12 @@ defmodule Extasks.Mixfile do
   end
 
   def application do
-    [applications: [:exlager, :exactor],
+    [applications: [:logger, :exactor],
      mod: {ExTask, []}]
   end
 
   defp deps do
     [
-      {:exlager, github: "khia/exlager"},
       {:exactor, github: "sasa1977/exactor"}
     ]
   end
